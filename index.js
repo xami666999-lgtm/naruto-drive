@@ -7,6 +7,7 @@ const manifest = {
   id: 'com.naruto.drive',
   version: '1.0.0',
   name: 'Naruto Drive',
+  logo: 'https://raw.githubusercontent.com/xami666999-lgtm/naruto-drive/main/covers/naruto-kai.jpg',
   description: 'Naruto episodes from Google Drive. Childhood, Gaiden, Kakashi, Shippuden, Senjou, Itachi, Hiden, Next Generations, Boruto.',
   resources: ['catalog', 'meta', 'stream'],
   types: ['series'],
