@@ -20,26 +20,30 @@ app.use((req, res, next) => { res.set('Access-Control-Allow-Origin', '*'); next(
 
 app.get('/manifest.json', (_req, res) => res.json(manifest))
 
+const POSTER = 'https://raw.githubusercontent.com/xami666999-lgtm/naruto-drive/main/covers/naruto-kai.jpg'
+const DESC = 'Twelve years ago, a Nine-Tailed Demon Fox appeared in the Village Hidden in the Leaves. The Fourth Hokage sealed it inside a newborn. Now Naruto Uzumaki seeks recognition by becoming a ninja, swearing to one day become the Hokage.'
+
 app.get('/catalog/series/naruto.json', (req, res) => {
-  const q = (req.query.search || '').toLowerCase()
-  const metas = seasons
-    .filter((s) => !q || s.name.toLowerCase().includes(q))
-    .map((s) => ({ id: 'naruto:' + s.id, type: 'series', name: s.name, poster: s.poster }))
-  res.json({ metas })
+  res.json({ metas: [{ id: 'naruto', type: 'series', name: 'Naruto Kai', poster: POSTER, description: DESC }] })
 })
 
 app.get('/meta/series/:id.json', (req, res) => {
-  const sid = req.params.id.replace('naruto:', '')
-  const season = seasons.find((s) => s.id === sid)
-  if (!season) return res.json({ meta: { id: req.params.id, type: 'series', name: 'Naruto' } })
-  const eps = (episodes[sid] || []).map((e, i) => ({
-    id: 'naruto:' + sid + ':' + e[0],
-    title: e[1],
-    season: 1,
-    episode: i + 1,
-    overview: e[3] || '',
-  }))
-  res.json({ meta: { id: req.params.id, type: 'series', name: season.name, poster: season.poster, videos: eps } })
+  const videos = []
+  let n = 1
+  const seasonNum = { s1: 1, s2: 2, s3: 3, s4: 4, s5: 5, s55: 6, s6: 7, s7: 8, s8: 9 }
+  const seasonName = { s1: 'Childhood', s2: 'Gaiden', s3: 'Kakashi', s4: 'Shippuden', s5: 'Senjou', s55: 'Itachi', s6: 'Hiden', s7: 'Next Generations', s8: 'Boruto' }
+  for (const sid of Object.keys(episodes)) {
+    for (const e of episodes[sid]) {
+      videos.push({
+        id: 'naruto:' + sid + ':' + e[0],
+        title: (seasonName[sid] || sid) + ' - ' + e[1],
+        season: seasonNum[sid] || 1,
+        episode: n++,
+        overview: e[3] || '',
+      })
+    }
+  }
+  res.json({ meta: { id: 'naruto', type: 'series', name: 'Naruto Kai', poster: POSTER, description: DESC, videos } })
 })
 
 function base(req) {
