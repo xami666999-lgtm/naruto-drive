@@ -42,12 +42,41 @@ app.get('/meta/series/:id.json', (req, res) => {
   res.json({ meta: { id: req.params.id, type: 'series', name: season.name, poster: season.poster, videos: eps } })
 })
 
+function base(req) {
+  const host = req.get('host')
+  const proto = (req.headers['x-forwarded-proto'] || 'https').split(',')[0]
+  return proto + '://' + host
+}
+
 app.get('/stream/series/:id.json', (req, res) => {
   const parts = req.params.id.split(':')
   if (parts[0] !== 'naruto') return res.json({ streams: [] })
   const ep = (episodes[parts[1]] || []).find((e) => e[0] === parts[2])
   if (!ep) return res.json({ streams: [] })
-  res.json({ streams: [{ name: 'Drive', title: ep[1], url: DRIVE(ep[2]) }] })
+  res.json({ streams: [{ name: 'Naruto', title: ep[1], url: base(req) + '/play/' + ep[2] }] })
+})
+
+app.get('/play/:fileId', async (req, res) => {
+  try {
+    const id = req.params.fileId
+    const warn = await fetch('https://drive.google.com/uc?export=download&id=' + id, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+    })
+    const html = await warn.text()
+    const uuid = (html.match(/name="uuid" value="([^"]+)"/) || [])[1] || ''
+    const url = 'https://drive.usercontent.google.com/download?id=' + id + '&export=download&confirm=t' + (uuid ? '&uuid=' + uuid : '')
+    const r = await fetch(url, { redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0' } })
+    const disp = r.headers.get('content-disposition') || ''
+    const name = (disp.match(/filename="([^"]+)"/) || [])[1] || ''
+    const type = /\.mkv/i.test(name) ? 'video/x-matroska' : /\.mp4|\.m4v/i.test(name) ? 'video/mp4' : (r.headers.get('content-type') || 'video/mp4')
+    res.set('Content-Type', type)
+    res.set('Accept-Ranges', 'bytes')
+    if (r.headers.get('content-length')) res.set('Content-Length', r.headers.get('content-length'))
+    const { Readable } = require('stream')
+    Readable.fromWeb(r.body).pipe(res)
+  } catch (err) {
+    res.status(502).send('stream failed')
+  }
 })
 
 app.get('/', (_req, res) => res.redirect('/manifest.json'))
